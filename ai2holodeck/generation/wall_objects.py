@@ -6,7 +6,9 @@ import time
 
 import matplotlib.pyplot as plt
 import numpy as np
-from langchain import PromptTemplate, OpenAI
+# from langchain_core.prompts import PromptTemplate, OpenAI
+from langchain_core.prompts import PromptTemplate
+from langchain_openai import ChatOpenAI
 from shapely.geometry import Polygon, box, Point, LineString
 from shapely.ops import substring
 
@@ -16,7 +18,7 @@ from ai2holodeck.generation.utils import get_bbox_dims
 
 
 class WallObjectGenerator:
-    def __init__(self, object_retriever: ObjathorRetriever, llm: OpenAI):
+    def __init__(self, object_retriever: ObjathorRetriever, llm: ChatOpenAI):
         self.json_template = {
             "assetId": None,
             "id": None,
@@ -64,7 +66,8 @@ class WallObjectGenerator:
             )
             for room in scene["rooms"]
         ]
-        pool = multiprocessing.Pool(processes=4)
+        from multiprocessing.dummy import Pool as ThreadPool
+        pool = ThreadPool(processes=4)
         all_placements = pool.map(self.generate_wall_objects_per_room, packed_args)
         pool.close()
         pool.join()
@@ -112,7 +115,8 @@ class WallObjectGenerator:
             wall_objects=", ".join(wall_object_names),
         )
         if self.constraint_type == "llm" and use_constraint:
-            constraint_plan = self.llm(constraints_prompt)
+            constraint_plan = self.llm.invoke(constraints_prompt).content
+            
         else:
             constraint_plan = ""
             for object_name in wall_object_names:

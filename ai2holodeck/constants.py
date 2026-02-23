@@ -9,7 +9,7 @@ HD_BASE_VERSION = os.environ.get("HD_BASE_VERSION", "2023_09_23")
 OBJATHOR_ASSETS_BASE_DIR = os.environ.get(
     "OBJATHOR_ASSETS_BASE_DIR", os.path.expanduser(f"~/.objathor-assets")
 )
-OBJATHOR_ASSETS_BASE_DIR = "/data-nas/data/experiments/mushui/.objathor-assets/2023_09_23/"
+OBJATHOR_ASSETS_BASE_DIR = "/data-nas/data/experiments/mushui/.objathor-assets/"
 
 OBJATHOR_VERSIONED_DIR = os.path.join(OBJATHOR_ASSETS_BASE_DIR, ASSETS_VERSION)
 OBJATHOR_ASSETS_DIR = os.path.join(OBJATHOR_VERSIONED_DIR, "assets")

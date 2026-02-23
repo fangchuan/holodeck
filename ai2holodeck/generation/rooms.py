@@ -12,7 +12,9 @@ import matplotlib.pyplot as plt
 import torch
 from PIL import Image
 from colorama import Fore
-from langchain import PromptTemplate, OpenAI
+# from langchain_core.prompts import PromptTemplate, OpenAI
+from langchain_core.prompts import PromptTemplate
+from langchain_openai import ChatOpenAI
 from shapely.geometry import LineString, Point, Polygon
 from tqdm import tqdm
 
@@ -21,7 +23,8 @@ from ai2holodeck.constants import HOLODECK_BASE_DATA_DIR, DEBUGGING
 
 
 class FloorPlanGenerator:
-    def __init__(self, clip_model, clip_process, clip_tokenizer, llm: OpenAI):
+    # def __init__(self, clip_model, clip_process, clip_tokenizer, llm: OpenAI):
+    def __init__(self, clip_model, clip_process, clip_tokenizer, llm: ChatOpenAI):
         self.json_template = {
             "ceilings": [],
             "children": [],
@@ -46,8 +49,12 @@ class FloorPlanGenerator:
         floor_plan_prompt = self.floor_plan_template.format(
             input=scene["query"], additional_requirements=additional_requirements
         )
+        # if "raw_floor_plan" not in scene:
+        #     raw_floor_plan = self.llm(floor_plan_prompt)
+        #     scene["raw_floor_plan"] = raw_floor_plan
         if "raw_floor_plan" not in scene:
-            raw_floor_plan = self.llm(floor_plan_prompt)
+            # 使用 invoke 并提取 content 获取返回的字符串结果
+            raw_floor_plan = self.llm.invoke(floor_plan_prompt).content
             scene["raw_floor_plan"] = raw_floor_plan
         else:
             raw_floor_plan = scene["raw_floor_plan"]

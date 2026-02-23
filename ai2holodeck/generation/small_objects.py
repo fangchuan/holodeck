@@ -5,8 +5,11 @@ import random
 import torch
 import torch.nn.functional as F
 from ai2thor.controller import Controller
+from ai2thor.platform import CloudRendering
 from ai2thor.hooks.procedural_asset_hook import ProceduralAssetHookRunner
-from langchain import OpenAI
+# from langchain import OpenAI
+from langchain_core.prompts import PromptTemplate
+from langchain_openai import ChatOpenAI
 from procthor.constants import FLOOR_Y
 from procthor.utils.types import Vector3
 
@@ -20,7 +23,7 @@ from ai2holodeck.generation.utils import (
 
 
 class SmallObjectGenerator:
-    def __init__(self, object_retriever: ObjathorRetriever, llm: OpenAI):
+    def __init__(self, object_retriever: ObjathorRetriever, llm: ChatOpenAI):
         self.llm = llm
         self.object_retriever = object_retriever
         self.database = object_retriever.database
@@ -286,6 +289,7 @@ class SmallObjectGenerator:
     def start_controller(self, scene, objaverse_dir):
         controller = Controller(
             commit_id=THOR_COMMIT_ID,
+            platform=CloudRendering,
             agentMode="default",
             makeAgentsVisible=False,
             visibilityDistance=1.5,

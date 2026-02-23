@@ -1,5 +1,8 @@
 import ast
 import os
+import sys
+sys.path.append(".")
+sys.path.append("..")
 import traceback
 from argparse import ArgumentParser
 
@@ -52,25 +55,25 @@ def generate_single_scene(args):
         print("Generating from an empty scene.")
         scene = args.model.get_empty_scene()
 
-    try:
-        _, save_dir = args.model.generate_scene(
-            scene=scene,
-            query=args.query,
-            save_dir=args.save_dir,
-            used_assets=args.used_assets,
-            generate_image=ast.literal_eval(args.generate_image),
-            generate_video=ast.literal_eval(args.generate_video),
-            add_ceiling=ast.literal_eval(args.add_ceiling),
-            add_time=ast.literal_eval(args.add_time),
-            use_constraint=ast.literal_eval(args.use_constraint),
-            use_milp=ast.literal_eval(args.use_milp),
-            random_selection=ast.literal_eval(args.random_selection),
-        )
-    except:
-        print(
-            f"[ERROR] Could not generate scene from {args.query}. Traceback:\n{traceback.format_exc()}"
-        )
-        return
+    # try:
+    _, save_dir = args.model.generate_scene(
+        scene=scene,
+        query=args.query,
+        save_dir=args.save_dir,
+        used_assets=args.used_assets,
+        generate_image=ast.literal_eval(args.generate_image),
+        generate_video=ast.literal_eval(args.generate_video),
+        add_ceiling=ast.literal_eval(args.add_ceiling),
+        add_time=ast.literal_eval(args.add_time),
+        use_constraint=ast.literal_eval(args.use_constraint),
+        use_milp=ast.literal_eval(args.use_milp),
+        random_selection=ast.literal_eval(args.random_selection),
+    )
+    # except:
+    #     print(
+    #         f"[ERROR] Could not generate scene from {args.query}. Traceback:\n{traceback.format_exc()}"
+    #     )
+    #     return
 
     print(
         f"Generation complete for {args.query}. Scene saved and any other data saved to {save_dir}."
@@ -129,7 +132,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--openai_api_key",
         help="OpenAI API key. If none given, will attempt to read this from the OPENAI_API_KEY env variable.",
-        default=None,
+        default="sk-pm5sV7ede86ga9LBBdBc6eFe47C54193BbD0Dd29Db06Ef95",
     )
     parser.add_argument(
         "--openai_org",

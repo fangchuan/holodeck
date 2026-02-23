@@ -10,7 +10,9 @@ from typing import Dict, List
 import torch
 import torch.nn.functional as F
 from colorama import Fore
-from langchain import PromptTemplate, OpenAI
+# from langchain_core.prompts import PromptTemplate, OpenAI
+from langchain_core.prompts import PromptTemplate
+from langchain_openai import ChatOpenAI
 from shapely import Polygon
 
 import ai2holodeck.generation.prompts as prompts
@@ -30,7 +32,7 @@ EXPECTED_OBJECT_ATTRIBUTES = [
 
 
 class ObjectSelector:
-    def __init__(self, object_retriever: ObjathorRetriever, llm: OpenAI):
+    def __init__(self, object_retriever: ObjathorRetriever, llm: ChatOpenAI):
         # object retriever
         self.object_retriever = object_retriever
         self.database = object_retriever.database
@@ -60,7 +62,7 @@ class ObjectSelector:
 
         self.random_selection = False
         self.reuse_selection = False
-        self.multiprocessing = True
+        self.multiprocessing = False
 
     def select_objects(self, scene, additional_requirements="N/A"):
         rooms_types = [room["roomType"] for room in scene["rooms"]]
@@ -124,7 +126,8 @@ class ObjectSelector:
             ]
 
             if self.multiprocessing:
-                pool = multiprocessing.Pool(processes=4)
+                from multiprocessing.dummy import Pool as ThreadPool
+                pool = ThreadPool(processes=4)
                 results = pool.map(self.plan_room, packed_args)
                 pool.close()
                 pool.join()
@@ -153,7 +156,7 @@ class ObjectSelector:
         ) = args
         print(f"\n{Fore.GREEN}AI: Selecting objects for {room_type}...{Fore.RESET}\n")
 
-        result = {}
+        result = {"floor": [], "wall": [], "plan": {}}
         room_size_str = f"{int(room2size[room_type][0])*100}cm in length, {int(room2size[room_type][1])*100}cm in width, {int(room2size[room_type][2])*100}cm in height"
 
         prompt_1 = (
@@ -163,12 +166,14 @@ class ObjectSelector:
             .replace("REQUIREMENTS", additional_requirements)
         )
 
-        output_1 = self.llm(prompt_1).lower()
+        # output_1 = self.llm(prompt_1).lower()
+        output_1 = self.llm.invoke(prompt_1).content.lower()
+        print(f"[ObjectSelector:plan_room] Initial planning output for {room_type}:\n{output_1}")
         plan_1 = self.extract_json(output_1)
 
         if plan_1 is None:
             print(f"Error while extracting the JSON for {room_type}.")
-            return result
+            return room_type, result
 
         (
             floor_objects,
@@ -201,7 +206,8 @@ class ObjectSelector:
                 object_selection_1=output_1,
                 room=room_type,
             )
-            output_2 = self.llm(prompt_2).lower()
+            output_2 = self.llm.invoke(prompt_2).content.lower()
+            print(f"[ObjectSelector:plan_room] Replanning output for {room_type}:\n{output_2}")
             plan_2 = self.extract_json(output_2)
 
             if plan_2 is None:
