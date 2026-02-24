@@ -24,16 +24,16 @@ def all_edges_white(img):
     white = [255, 255, 255]
 
     # Check top edge
-    if not np.all(np.all(img[0, :] == white, axis=-1)):
+    if not np.all(np.all(img[0, :, :3] == white, axis=-1)):
         return False
     # Check bottom edge
-    if not np.all(np.all(img[-1, :] == white, axis=-1)):
+    if not np.all(np.all(img[-1, :, :3] == white, axis=-1)):
         return False
     # Check left edge
-    if not np.all(np.all(img[:, 0] == white, axis=-1)):
+    if not np.all(np.all(img[:, 0, :3] == white, axis=-1)):
         return False
     # Check right edge
-    if not np.all(np.all(img[:, -1] == white, axis=-1)):
+    if not np.all(np.all(img[:, -1, :3] == white, axis=-1)):
         return False
 
     # If all the conditions met
@@ -89,7 +89,7 @@ def get_top_down_frame(scene, objaverse_asset_dir, width=1024, height=1024):
             raise_for_failure=True,
         )
         top_down_frame = event.third_party_camera_frames[-1]
-
+        print(f"top_down_frame shape: {top_down_frame.shape}")
         # check if the edge of the frame is white
         if all_edges_white(top_down_frame):
             break

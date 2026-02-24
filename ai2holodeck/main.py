@@ -1,6 +1,7 @@
 import ast
 import os
 import sys
+
 sys.path.append(".")
 sys.path.append("..")
 import traceback
@@ -32,23 +33,16 @@ def generate_single_scene(args):
         try:
             scene = compress_json.load(args.original_scene)
         except:
-            print(
-                f"[ERROR] Could not load original scene from given path {args.original_scene}."
-            )
+            print(f"[ERROR] Could not load original scene from given path {args.original_scene}.")
             raise
     else:
-        path = os.path.join(
-            HOLODECK_BASE_DATA_DIR, f"scenes/{folder_name}/{folder_name}.json"
-        )
+        path = os.path.join(HOLODECK_BASE_DATA_DIR, f"scenes/{folder_name}/{folder_name}.json")
         if os.path.exists(path):
             print(f"Loading existing scene from {path}.")
             try:
                 scene = compress_json.load(path)
             except:
-                print(
-                    f"[ERROR] The path {path} exists but could not be loaded. Please delete"
-                    f" this file and try again."
-                )
+                print(f"[ERROR] The path {path} exists but could not be loaded. Please delete" f" this file and try again.")
                 raise
 
     if scene is None:
@@ -75,9 +69,7 @@ def generate_single_scene(args):
     #     )
     #     return
 
-    print(
-        f"Generation complete for {args.query}. Scene saved and any other data saved to {save_dir}."
-    )
+    print(f"Generation complete for {args.query}. Scene saved and any other data saved to {save_dir}.")
 
 
 def generate_multi_scenes(args):
@@ -115,15 +107,9 @@ if __name__ == "__main__":
         help="Mode to run in (generate_single_scene, generate_multi_scenes or generate_variants).",
         default="generate_single_scene",
     )
-    parser.add_argument(
-        "--query", help="Query to generate scene from.", default="a living room"
-    )
-    parser.add_argument(
-        "--query_file", help="File to load queries from.", default="./data/queries.txt"
-    )
-    parser.add_argument(
-        "--number_of_variants", help="Number of variants to generate.", default=5
-    )
+    parser.add_argument("--query", help="Query to generate scene from.", default="a living room")
+    parser.add_argument("--query_file", help="File to load queries from.", default="./data/queries.txt")
+    parser.add_argument("--number_of_variants", help="Number of variants to generate.", default=5)
     parser.add_argument(
         "--original_scene",
         help="Original scene to generate variants from.",
@@ -132,16 +118,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--openai_api_key",
         help="OpenAI API key. If none given, will attempt to read this from the OPENAI_API_KEY env variable.",
-        default="sk-pm5sV7ede86ga9LBBdBc6eFe47C54193BbD0Dd29Db06Ef95",
+        default="sk-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
     )
     parser.add_argument(
         "--openai_org",
         help="OpenAI ORG string. If none given, will attempt to read this from the OPENAI_ORG env variable.",
         default=None,
     )
-    parser.add_argument(
-        "--save_dir", help="Directory to save scene to.", default="./data/scenes"
-    )
+    parser.add_argument("--save_dir", help="Directory to save scene to.", default="./data/scenes")
     parser.add_argument(
         "--generate_image",
         help="Whether to generate an image of the scene.",
@@ -152,15 +136,9 @@ if __name__ == "__main__":
         help="Whether to generate a video of the scene.",
         default="False",
     )
-    parser.add_argument(
-        "--add_ceiling", help="Whether to add a ceiling to the scene.", default="False"
-    )
-    parser.add_argument(
-        "--add_time", help="Whether to add the time to the scene name.", default="True"
-    )
-    parser.add_argument(
-        "--use_constraint", help="Whether to use constraints.", default="True"
-    )
+    parser.add_argument("--add_ceiling", help="Whether to add a ceiling to the scene.", default="False")
+    parser.add_argument("--add_time", help="Whether to add the time to the scene name.", default="True")
+    parser.add_argument("--use_constraint", help="Whether to use constraints.", default="True")
     parser.add_argument(
         "--use_milp",
         help="Whether to use mixed integer linear programming for the constraint satisfaction solver.",

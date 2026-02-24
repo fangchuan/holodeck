@@ -9,7 +9,7 @@ HD_BASE_VERSION = os.environ.get("HD_BASE_VERSION", "2023_09_23")
 OBJATHOR_ASSETS_BASE_DIR = os.environ.get(
     "OBJATHOR_ASSETS_BASE_DIR", os.path.expanduser(f"~/.objathor-assets")
 )
-OBJATHOR_ASSETS_BASE_DIR = "/data-nas/data/experiments/mushui/.objathor-assets/"
+OBJATHOR_ASSETS_BASE_DIR = "/mnt/nas_3dv/hdd1/fangchuan/cache/.objathor-assets"
 
 OBJATHOR_VERSIONED_DIR = os.path.join(OBJATHOR_ASSETS_BASE_DIR, ASSETS_VERSION)
 OBJATHOR_ASSETS_DIR = os.path.join(OBJATHOR_VERSIONED_DIR, "assets")
@@ -32,6 +32,6 @@ else:
 
 # LLM_MODEL_NAME = "gpt-4-1106-preview"
 # LLM_MODEL_NAME = "gpt-4o-2024-05-13"
-LLM_MODEL_NAME = "gpt-5.2"
+LLM_MODEL_NAME = "gpt-4o"
 
 DEBUGGING = os.environ.get("DEBUGGING", "0").lower() in ["1", "true", "True", "t", "T"]

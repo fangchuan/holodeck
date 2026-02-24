@@ -77,7 +77,8 @@ class Holodeck:
             model_name=LLM_MODEL_NAME, # 也可以使用 model=LLM_MODEL_NAME
             max_tokens=2048,
             openai_api_key=openai_api_key,
-            base_url="https://oneapi.qunhequnhe.com/v1",
+            # base_url="https://oneapi.qunhequnhe.com/v1",
+            base_url="https://api.openai-hub.com/v1",
         )
 
         # initialize CLIP
@@ -87,14 +88,14 @@ class Holodeck:
             self.clip_preprocess,
         ) = open_clip.create_model_and_transforms(
             "ViT-L-14", 
-            pretrained="/data-nas/data/experiments/mushui/.cache/huggingface/hub/models--laion--CLIP-ViT-L-14-laion2B-s32B-b82K/snapshots/1627032197142fbe2a7cfec626f4ced3ae60d07a/open_clip_pytorch_model.bin"
+            pretrained="/mnt/nas_3dv/hdd1/fangchuan/cache/laion_clip_vit_l14/open_clip_pytorch_model.bin"
         )
         self.clip_tokenizer = open_clip.get_tokenizer("ViT-L-14")
 
         # initialize sentence transformer
-        all_mpnet_base_v2_cache_dir = "/data-nas/data/experiments/mushui/.cache/huggingface"
-        self.sbert_model = SentenceTransformer("all-mpnet-base-v2", device="cpu", cache_folder=all_mpnet_base_v2_cache_dir)
-        # self.sbert_model = SentenceTransformer(all_mpnet_base_v2_path, device="cpu")
+        all_mpnet_base_v2_cache_dir = "/home/hkust/.cache/huggingface/hub/models--sentence-transformers--all-mpnet-base-v2/snapshots/e8c3b32edf5434bc2275fc9bab85f82640a19130"
+        # self.sbert_model = SentenceTransformer("all-mpnet-base-v2", device="cpu", cache_folder=all_mpnet_base_v2_cache_dir)
+        self.sbert_model = SentenceTransformer(all_mpnet_base_v2_cache_dir, device="cpu")
 
         # objaverse version and asset dir
         self.objaverse_asset_dir = objaverse_asset_dir
