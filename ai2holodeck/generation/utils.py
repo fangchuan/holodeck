@@ -40,6 +40,25 @@ def all_edges_white(img):
     return True
 
 
+def all_edges_gray(img):
+    # Define a gray pixel (matches Unity "gray" = 128, 128, 128)
+    gray = np.array([128, 128, 128])
+    tol = 10  # tolerance for slight rendering variation
+
+    def is_gray_row_or_col(pixels):
+        return np.all(np.max(np.abs(pixels[:, :3].astype(int) - gray), axis=-1) <= tol)
+
+    if not is_gray_row_or_col(img[0]):
+        return False
+    if not is_gray_row_or_col(img[-1]):
+        return False
+    if not is_gray_row_or_col(img[:, 0]):
+        return False
+    if not is_gray_row_or_col(img[:, -1]):
+        return False
+    return True
+
+
 def get_top_down_frame(scene, objaverse_asset_dir, width=1024, height=1024):
     controller = Controller(
         commit_id=THOR_COMMIT_ID,
@@ -69,9 +88,7 @@ def get_top_down_frame(scene, objaverse_asset_dir, width=1024, height=1024):
     del pose["orthographicSize"]
 
     try:
-        wall_height = wall_height = max(
-            [point["y"] for point in scene["walls"][0]["polygon"]]
-        )
+        wall_height = wall_height = max([point["y"] for point in scene["walls"][0]["polygon"]])
     except:
         wall_height = 2.5
 
@@ -85,13 +102,15 @@ def get_top_down_frame(scene, objaverse_asset_dir, width=1024, height=1024):
         event = controller.step(
             action="AddThirdPartyCamera",
             **pose,
-            skyboxColor="white",
+            # skyboxColor="white",
+            skyboxColor="#808080",
             raise_for_failure=True,
         )
         top_down_frame = event.third_party_camera_frames[-1]
-        print(f"top_down_frame shape: {top_down_frame.shape}")
-        # check if the edge of the frame is white
-        if all_edges_white(top_down_frame):
+        # print(f"top_down_frame shape: {top_down_frame.shape}")
+        # check if the edge of the frame is gray
+        # if all_edges_white(top_down_frame):
+        if all_edges_gray(top_down_frame):
             break
 
         pose["position"]["y"] += 0.75
@@ -193,29 +212,17 @@ def get_room_images(scene, objaverse_asset_dir, width=1024, height=1024):
         room_center = np.mean(room_vertices, axis=0)
         floor_center = np.array([room_center[0], 0, room_center[1]])
         camera_center = np.array([room_center[0], camera_height, room_center[1]])
-        corners = np.array(
-            [[point[0], camera_height, point[1]] for point in room_vertices]
-        )
+        corners = np.array([[point[0], camera_height, point[1]] for point in room_vertices])
         farest_corner = np.argmax(np.linalg.norm(corners - camera_center, axis=1))
 
         vector_1 = floor_center - camera_center
         vector_2 = farest_corner - camera_center
-        x_angle = (
-            90
-            - np.arccos(
-                np.dot(vector_1, vector_2)
-                / (np.linalg.norm(vector_1) * np.linalg.norm(vector_2))
-            )
-            * 180
-            / np.pi
-        )
+        x_angle = 90 - np.arccos(np.dot(vector_1, vector_2) / (np.linalg.norm(vector_1) * np.linalg.norm(vector_2))) * 180 / np.pi
 
         if not controller.last_event.third_party_camera_frames:
             controller.step(
                 action="AddThirdPartyCamera",
-                position=dict(
-                    x=camera_center[0], y=camera_center[1], z=camera_center[2]
-                ),
+                position=dict(x=camera_center[0], y=camera_center[1], z=camera_center[2]),
                 rotation=dict(x=0, y=0, z=0),
             )
 
@@ -224,13 +231,9 @@ def get_room_images(scene, objaverse_asset_dir, width=1024, height=1024):
             controller.step(
                 action="UpdateThirdPartyCamera",
                 rotation=dict(x=x_angle, y=angle + 45, z=0),
-                position=dict(
-                    x=camera_center[0], y=camera_center[1], z=camera_center[2]
-                ),
+                position=dict(x=camera_center[0], y=camera_center[1], z=camera_center[2]),
             )
-            images.append(
-                Image.fromarray(controller.last_event.third_party_camera_frames[0])
-            )
+            images.append(Image.fromarray(controller.last_event.third_party_camera_frames[0]))
 
         room_images[room_name] = images
 
@@ -265,9 +268,7 @@ def ithor_video(scene, objaverse_asset_dir, width, height, scene_type):
     if not controller.last_event.third_party_camera_frames:
         controller.step(
             action="AddThirdPartyCamera",
-            position=dict(
-                x=pose["position"]["x"], y=camera_height, z=pose["position"]["z"]
-            ),
+            position=dict(x=pose["position"]["x"], y=camera_height, z=pose["position"]["z"]),
             rotation=dict(x=0, y=0, z=0),
         )
 
@@ -277,26 +278,16 @@ def ithor_video(scene, objaverse_asset_dir, width, height, scene_type):
         controller.step(
             action="UpdateThirdPartyCamera",
             rotation=dict(x=45, y=angle, z=0),
-            position=dict(
-                x=pose["position"]["x"], y=camera_height, z=pose["position"]["z"]
-            ),
+            position=dict(x=pose["position"]["x"], y=camera_height, z=pose["position"]["z"]),
         )
         images.append(controller.last_event.third_party_camera_frames[0])
 
     imsn = ImageSequenceClip(images, fps=30)
 
     # Create text clips
-    txt_clip_query = (
-        TextClip(f"Query: {scene_type}", fontsize=30, color="white", font="Arial-Bold")
-        .set_pos(("center", "top"))
-        .set_duration(imsn.duration)
-    )
+    txt_clip_query = TextClip(f"Query: {scene_type}", fontsize=30, color="white", font="Arial-Bold").set_pos(("center", "top")).set_duration(imsn.duration)
     txt_clip_room = (
-        TextClip(
-            f"Room Type: {scene_type}", fontsize=30, color="white", font="Arial-Bold"
-        )
-        .set_pos(("center", "bottom"))
-        .set_duration(imsn.duration)
+        TextClip(f"Room Type: {scene_type}", fontsize=30, color="white", font="Arial-Bold").set_pos(("center", "bottom")).set_duration(imsn.duration)
     )
 
     # Overlay the text clip on the first video clip
@@ -361,32 +352,18 @@ def room_video(scene, objaverse_asset_dir, width, height):
         room_center = np.mean(room_vertices, axis=0)
         floor_center = np.array([room_center[0], 0, room_center[1]])
         camera_center = np.array([room_center[0], camera_height, room_center[1]])
-        corners = np.array(
-            [[point["x"], point["y"], point["z"]] for point in room["floorPolygon"]]
-        )
-        farest_corner = corners[
-            np.argmax(np.linalg.norm(corners - camera_center, axis=1))
-        ]
+        corners = np.array([[point["x"], point["y"], point["z"]] for point in room["floorPolygon"]])
+        farest_corner = corners[np.argmax(np.linalg.norm(corners - camera_center, axis=1))]
 
         vector_1 = floor_center - camera_center
         vector_2 = farest_corner - camera_center
-        x_angle = (
-            90
-            - np.arccos(
-                np.dot(vector_1, vector_2)
-                / (np.linalg.norm(vector_1) * np.linalg.norm(vector_2))
-            )
-            * 180
-            / np.pi
-        )
+        x_angle = 90 - np.arccos(np.dot(vector_1, vector_2) / (np.linalg.norm(vector_1) * np.linalg.norm(vector_2))) * 180 / np.pi
 
         images = []
         if not controller.last_event.third_party_camera_frames:
             controller.step(
                 action="AddThirdPartyCamera",
-                position=dict(
-                    x=camera_center[0], y=camera_center[1], z=camera_center[2]
-                ),
+                position=dict(x=camera_center[0], y=camera_center[1], z=camera_center[2]),
                 rotation=dict(x=0, y=0, z=0),
             )
 
@@ -394,28 +371,16 @@ def room_video(scene, objaverse_asset_dir, width, height):
             controller.step(
                 action="UpdateThirdPartyCamera",
                 rotation=dict(x=x_angle, y=angle, z=0),
-                position=dict(
-                    x=camera_center[0], y=camera_center[1], z=camera_center[2]
-                ),
+                position=dict(x=camera_center[0], y=camera_center[1], z=camera_center[2]),
             )
             images.append(controller.last_event.third_party_camera_frames[0])
 
         imsn = ImageSequenceClip(images, fps=30)
 
         # Create text clips
-        txt_clip_query = (
-            TextClip(
-                f"Query: {text_query}", fontsize=30, color="white", font="Arial-Bold"
-            )
-            .set_pos(("center", "top"))
-            .set_duration(imsn.duration)
-        )
+        txt_clip_query = TextClip(f"Query: {text_query}", fontsize=30, color="white", font="Arial-Bold").set_pos(("center", "top")).set_duration(imsn.duration)
         txt_clip_room = (
-            TextClip(
-                f"Room Type: {room_name}", fontsize=30, color="white", font="Arial-Bold"
-            )
-            .set_pos(("center", "bottom"))
-            .set_duration(imsn.duration)
+            TextClip(f"Room Type: {room_name}", fontsize=30, color="white", font="Arial-Bold").set_pos(("center", "bottom")).set_duration(imsn.duration)
         )
 
         # Overlay the text clip on the first video clip
@@ -472,6 +437,82 @@ def get_secondary_properties(obj_data: Dict[str, Any]):
     return am["secondaryProperties"]
 
 
+# Full code to convert the pkl.gz data to an .obj file
+import gzip
+import pickle
+import numpy as np
+import os
+
+
+def load_pkl_gz(file_path):
+    """Load a .pkl.gz file."""
+    with gzip.open(file_path, "rb") as f:
+        return pickle.load(f)
+
+
+def extract_vertices(vertices_data):
+    """Extract vertices into a NumPy array from the given data format."""
+    return np.array([[v["x"], v["y"], v["z"]] for v in vertices_data])
+
+
+def create_faces(triangles_data):
+    """Create faces (triangles) from the given indices."""
+    return triangles_data.reshape(-1, 3)
+
+
+def save_to_obj(vertices, faces, file_path):
+    """Save vertices and faces to an OBJ file."""
+    with open(file_path, "w") as file:
+        for v in vertices:
+            file.write(f"v {v[0]} {v[1]} {v[2]}\n")
+        for f in faces:
+            # OBJ files are 1-indexed
+            file.write(f"f {f[0]+1} {f[1]+1} {f[2]+1}\n")
+
+
+def convert_pkl_gz_to_obj(input_file_path, output_file_path):
+    """Convert a .pkl.gz file to an .obj file."""
+    if not os.path.exists(input_file_path):
+        return None
+    # Load the .pkl.gz file
+    data = load_pkl_gz(input_file_path)
+
+    # Extracting vertices and triangles (faces) from the data
+    vertices = np.array(data["vertices"])
+    triangles = np.array(data["triangles"])
+
+    # Process the data
+    vertices_array = extract_vertices(vertices)
+    faces_array = create_faces(triangles)
+
+    # Saving to .obj file
+    save_to_obj(vertices_array, faces_array, output_file_path)
+
+    return output_file_path
+
+
+import json
+from typing import Union, Any
+from pathlib import Path
+
+
+def load_from_json(filepath: Union[str, Path]) -> Any:
+    """Loads a JSON file and returns the content."""
+    filepath = Path(filepath)
+    if not filepath.exists():
+        return None
+
+    with open(filepath, "r") as f:
+        return json.load(f)
+
+
+def save_to_json(data: Any, filepath: Union[str, Path]) -> None:
+    """Saves data to a JSON file."""
+    filepath = Path(filepath)
+    with open(filepath, "w") as f:
+        json.dump(data, f, indent=4)
+
+
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument(
@@ -487,9 +528,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--scene",
         help="Scene to load.",
-        default=os.path.join(
-            HOLODECK_BASE_DATA_DIR, "scenes/a_living_room/a_living_room.json"
-        ),
+        default=os.path.join(HOLODECK_BASE_DATA_DIR, "scenes/a_living_room/a_living_room.json"),
     )
 
     args = parser.parse_args()
