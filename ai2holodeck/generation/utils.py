@@ -59,14 +59,106 @@ def all_edges_gray(img):
     return True
 
 
+# def get_top_down_frame(scene, objaverse_asset_dir, width=1024, height=1024):
+#     controller = Controller(
+#         commit_id=THOR_COMMIT_ID,
+#         platform="CloudRendering",
+#         agentMode="default",
+#         makeAgentsVisible=False,
+#         visibilityDistance=1.5,
+#         scene=scene,
+#         width=width,
+#         height=height,
+#         fieldOfView=90,
+#         action_hook_runner=ProceduralAssetHookRunner(
+#             asset_directory=objaverse_asset_dir,
+#             asset_symlink=True,
+#             verbose=True,
+#         ),
+#     )
+
+#     # Setup the top-down camera
+#     event = controller.step(action="GetMapViewCameraProperties", raise_for_failure=True)
+#     pose = copy.deepcopy(event.metadata["actionReturn"])
+
+#     bounds = event.metadata["sceneBounds"]["size"]
+
+#     pose["fieldOfView"] = 60
+#     pose["position"]["y"] = bounds["y"]
+#     del pose["orthographicSize"]
+
+#     try:
+#         wall_height = wall_height = max([point["y"] for point in scene["walls"][0]["polygon"]])
+#     except:
+#         wall_height = 2.5
+
+#     for i in range(20):
+#         pose["orthographic"] = False
+
+#         pose["farClippingPlane"] = pose["position"]["y"] + 10
+#         pose["nearClippingPlane"] = pose["position"]["y"] - wall_height
+
+#         # add the camera to the scene
+#         event = controller.step(
+#             action="AddThirdPartyCamera",
+#             **pose,
+#             # skyboxColor="white",
+#             skyboxColor="#808080",
+#             raise_for_failure=True,
+#         )
+#         top_down_frame = event.third_party_camera_frames[-1]
+#         # print(f"top_down_frame shape: {top_down_frame.shape}")
+#         # check if the edge of the frame is gray
+#         # if all_edges_white(top_down_frame):
+#         if all_edges_gray(top_down_frame):
+#             break
+
+#         pose["position"]["y"] += 0.75
+
+#     controller.stop()
+#     image = Image.fromarray(top_down_frame)
+
+#     return image
+import copy
+from PIL import Image
+import numpy as np
+
 def get_top_down_frame(scene, objaverse_asset_dir, width=1024, height=1024):
+    # 1. 深拷贝场景，避免污染最终输出的 JSON 和 GLB
+    scene_copy = copy.deepcopy(scene)
+    
+    # 2. 定义白模材质
+    # 使用 AI2-THOR 内置的合法无纹理哑光材质（石膏白墙材质），完美呈现几何光影
+    base_clay_material = {"name": "WallDrywallWhite"}
+    
+    # 将房间地面、天花板、墙壁全部剥离纹理，改为哑光白模
+    for room in scene_copy.get("rooms", []):
+        room["floorMaterial"] = base_clay_material
+        if "ceilingMaterial" in room:
+            room["ceilingMaterial"] = base_clay_material
+            
+    for wall in scene_copy.get("walls", []):
+        wall["material"] = base_clay_material
+        
+    for door in scene_copy.get("doors", []):
+        door["material"] = base_clay_material
+    for window in scene_copy.get("windows", []):
+        window["material"] = base_clay_material
+        
+    # 将所有生成物体的纹理剥离，并赋予一个稍微深一点的【中性灰】色调
+    # 这样物体不仅呈现无纹理的几何白模质感，还能在白色的地板背景上清晰凸显出来
+    for obj in scene_copy.get("objects", []):
+        obj["material"] = base_clay_material
+        obj["color"] = {"r": 0.65, "g": 0.65, "b": 0.65, "a": 1.0}
+
+    # 3. 初始化 Controller
     controller = Controller(
         commit_id=THOR_COMMIT_ID,
         platform="CloudRendering",
         agentMode="default",
         makeAgentsVisible=False,
         visibilityDistance=1.5,
-        scene=scene,
+        scene=scene_copy,  # <-- 传入无纹理的场景
         width=width,
         height=height,
         fieldOfView=90,
@@ -77,39 +169,38 @@ def get_top_down_frame(scene, objaverse_asset_dir, width=1024, height=1024):
         ),
     )
 
-    # Setup the top-down camera
+    # 设定相机
     event = controller.step(action="GetMapViewCameraProperties", raise_for_failure=True)
     pose = copy.deepcopy(event.metadata["actionReturn"])
-
     bounds = event.metadata["sceneBounds"]["size"]
 
     pose["fieldOfView"] = 60
     pose["position"]["y"] = bounds["y"]
-    del pose["orthographicSize"]
+    
+    if "orthographicSize" in pose:
+        del pose["orthographicSize"]
 
     try:
-        wall_height = wall_height = max([point["y"] for point in scene["walls"][0]["polygon"]])
+        wall_height = max([point["y"] for point in scene_copy["walls"][0]["polygon"]])
     except:
         wall_height = 2.5
 
     for i in range(20):
         pose["orthographic"] = False
-
         pose["farClippingPlane"] = pose["position"]["y"] + 10
         pose["nearClippingPlane"] = pose["position"]["y"] - wall_height
 
-        # add the camera to the scene
+        # 修复关键点：skyboxColor 必须严格等于 "#808080"！
+        # 否则 all_edges_gray 会判定失败，导致相机无限飞升进入灰色虚空
         event = controller.step(
             action="AddThirdPartyCamera",
             **pose,
-            # skyboxColor="white",
-            skyboxColor="#808080",
+            skyboxColor="#808080", 
             raise_for_failure=True,
         )
         top_down_frame = event.third_party_camera_frames[-1]
-        # print(f"top_down_frame shape: {top_down_frame.shape}")
-        # check if the edge of the frame is gray
-        # if all_edges_white(top_down_frame):
+        
+        # 当边缘达到 [128,128,128] 时，说明相机高度正好包裹住整个房间
         if all_edges_gray(top_down_frame):
             break
 

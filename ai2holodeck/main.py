@@ -116,7 +116,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--openai_api_key",
         help="OpenAI API key. If none given, will attempt to read this from the OPENAI_API_KEY env variable.",
-        default="sk-xxxxxxxxx",
+        default="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
     )
     parser.add_argument(
         "--openai_org",
